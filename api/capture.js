@@ -49,9 +49,25 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const { text } = req.body;
+  // Handle various body formats from Shortcuts
+  const body = req.body || {};
+  let text = body.text || body.Text || body.TEXT;
+
+  // If body is a string, try parsing it
+  if (!text && typeof body === "string") {
+    try {
+      const parsed = JSON.parse(body);
+      text = parsed.text || parsed.Text;
+    } catch {
+      text = body; // treat the whole string as the text
+    }
+  }
+
+  console.log("Received body:", JSON.stringify(req.body));
+  console.log("Extracted text:", text);
+
   if (!text || typeof text !== "string" || text.trim().length === 0) {
-    return res.status(400).json({ error: "Missing or empty 'text' field" });
+    return res.status(400).json({ error: "Missing or empty 'text' field", receivedBody: req.body });
   }
 
   try {
